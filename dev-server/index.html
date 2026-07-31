@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+    <body>
+        <canvas id="sketch"></canvas>
+        <script type="module" src="runner.js"></script>
+        <script>
+            const ws = new WebSocket("ws://localhost:3000");
+            ws.onmessage = () => location.reload();
+        </script>
+    </body>
+</html>
