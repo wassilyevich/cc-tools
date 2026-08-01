@@ -1,5 +1,6 @@
 const http = require("http");
 const fs = require("fs");
+const chokidar = require("chokidar");
 const path = require("path");
 const WebSocket = require("ws");
 
@@ -46,10 +47,32 @@ server.listen(PORT, () => {
 const wss = new WebSocket.Server({ server });
 
 // 5. watch files and notify clients on change
-fs.watch(DIR, { recursive: true }, (eventType, filename) => {
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send("reload");
+
+chokidar
+    .watch(DIR, {
+        ignored: /node_modules/,
+        ignoreInitial: true,
+        usePolling: true,
+        interval: 100,
+    })
+    .on("change", (filepath) => {
+        if (!filepath.endsWith(".js")) return;
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({ type: "reload" }));
+            }
+        });
+    });
+// Handle exporting image from browser
+
+const defaultPath = "/mnt/d/DefaultDownloads/";
+wss.on("connection", (client) => {
+    client.on("message", (message) => {
+        const msg = JSON.parse(message);
+        if (msg.type === "export") {
+            const buffer = Buffer.from(msg.data, "base64");
+            fs.writeFileSync(path.join(defaultPath, msg.filename), buffer);
+        } else if (msg.type === "reload") {
         }
     });
 });

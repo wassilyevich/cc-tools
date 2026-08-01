@@ -4,25 +4,22 @@
         <style>
             body {
                 background-color: #f6f6f6;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
+                overflow: hidden;
                 margin: 0;
             }
 
             canvas {
+                position: fixed;
+                top: 50%;
+                left: 50%;
                 box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
                 background-color: white;
+                transform-origin: center-center;
             }
         </style>
     </head>
     <body>
         <canvas id="sketch"></canvas>
         <script type="module" src="runner.js"></script>
-        <script>
-            const ws = new WebSocket("ws://localhost:3000");
-            ws.onmessage = () => location.reload();
-        </script>
     </body>
 </html>
