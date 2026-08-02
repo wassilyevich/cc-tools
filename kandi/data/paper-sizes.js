@@ -1,3 +1,4 @@
+// Non-exhaustive list of predefined sizes of typical print sizes - including a reference to the used units for later converting to other units
 export default {
     A0: { width: 841, height: 1189, units: "mm" },
     A1: { width: 594, height: 840, units: "mm" },

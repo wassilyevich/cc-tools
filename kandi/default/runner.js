@@ -1,14 +1,22 @@
+// Runner.js is the file that is the bridge between the sketch file (user side) and the html/browser side
+
+// Import dependencies (i.e. sketch file and data)
 import sketch, { settings, exportSettings } from "./sketch.js";
 import paperSizes from "./paper-sizes.js";
 import validUnits from "./units.js";
 
+// Start the websocket so the http server and the browser have an open line
 const ws = new WebSocket("ws://localhost:3000");
+// Hot reloading feature
 ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     if (msg.type === "reload") location.reload();
 };
+
+// Find canvas and define it
 const canvas = document.querySelector("#sketch");
-// 1. Resolve dimensions based on provided settings object
+
+// Define default values and variables
 let dpi = 96; // Default
 let units = "px"; // Default
 const MIL2PIX = 25.4;
@@ -24,7 +32,6 @@ if (settings.hasOwnProperty("dpi")) {
     }
 }
 // Check if units is defined in settings
-
 if (settings.hasOwnProperty("units")) {
     if (
         typeof settings.units === "string" ||
@@ -62,6 +69,7 @@ if (settings.hasOwnProperty("dimensions")) {
             );
         }
     } else if (
+        // If the provided dimension setting is not a string, it should be an array of 2 numbers [x dimension, y dimension]
         Array.isArray(settings.dimensions) &&
         settings.dimensions.length === 2
     ) {
@@ -84,25 +92,33 @@ if (settings.hasOwnProperty("dimensions")) {
 } else {
     throw new Error("No dimensions are provided in the settings object.");
 }
+
 // Actually resolve/rescale dimensions based on provided DPI and units
 if (units === "px" && baseUnits === "px") {
     // pure pixel dimensions, no conversion needed
 } else {
+    // If no baseunits are defined, we should use the user defined units or the default units
     const sourceUnits = baseUnits === "" ? units : baseUnits;
+    // The validUnits data is used to convert the non pixel based units to mm
     const toMM = validUnits[sourceUnits].factor;
     const eqMillimeters = [dimensions[0] * toMM, dimensions[1] * toMM];
+    // The mm dimensions are converted to pixels using the dpi settings
     dimensions = [
         (eqMillimeters[0] / MIL2PIX) * dpi,
         (eqMillimeters[1] / MIL2PIX) * dpi,
     ];
 }
+
+// Actually setting up the canvas and context
 const width = dimensions[0];
 const height = dimensions[1];
 canvas.width = width;
 canvas.height = height;
 const context = canvas.getContext("2d");
+// Define the render function as the sketch function provided by the user
 const render = sketch();
 
+// Define an animation loop renderer
 const loop = (timestamp) => {
     if (settings.clear) {
         context.clearRect(0, 0, width, height);
@@ -110,14 +126,17 @@ const loop = (timestamp) => {
     render({ context, width, height, time: timestamp });
     requestAnimationFrame(loop);
 };
+
+// Actual rendering
+// - Animated
+// - Static
 if (settings.animate) {
     requestAnimationFrame(loop);
 } else {
     render({ context, width, height });
 }
 
-// Utility functions
-//
+// fitToViewport utility function to make sure the canvas is always nicely centered in the window
 const fitToViewport = () => {
     const padding = 0.9;
     const scaleX = (window.innerWidth * padding) / canvas.width;
@@ -126,10 +145,14 @@ const fitToViewport = () => {
     canvas.style.transform = `translate(-50%, -50%) scale(${scale})`;
 };
 
+// Check for resizes and use the fitToViewport() function if so
 fitToViewport();
 window.addEventListener("resize", fitToViewport);
 
+//---------------------------------------------------------------------------------------------
 // Exporting an image
+
+// Initialize required variables for export naming
 let prefix = null;
 let custom = null;
 let seed = null;
@@ -141,6 +164,7 @@ let date =
 let suffix = null;
 let ext = ".png";
 
+// Based on input, check if it is valid
 if (exportSettings.hasOwnProperty("prefix")) {
     if (typeof exportSettings.prefix === "string") {
         prefix = exportSettings.prefix;
@@ -181,6 +205,12 @@ if (exportSettings.hasOwnProperty("suffix")) {
     }
 }
 
+// The keyListener function listens to keyup + keydown actions
+// all keys pushed down + released are tracked in exportKeys
+// is both ctrl + s are true together, the keyListener function triggers the export:
+// - Constructing the name based on the provided parameters
+// - Converting the canvas to a dataURL and stringifying it
+// - Sending it through the Websocket to the server side (node)
 window.onkeydown = keyListener;
 window.onkeyup = keyListener;
 let exportKeys = {};

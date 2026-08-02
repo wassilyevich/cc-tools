@@ -1,3 +1,4 @@
+// Simple conversion list for metric based conversion between used units
 export default {
     mm: { factor: 1 },
     cm: { factor: 10 },
