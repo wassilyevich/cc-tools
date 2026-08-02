@@ -115,7 +115,7 @@ const height = dimensions[1];
 canvas.width = width;
 canvas.height = height;
 const context = canvas.getContext("2d");
-// Define the render function as the sketch function provided by the user
+// Call sketch() once to run setup code, get back the render function
 const render = sketch();
 
 // Define an animation loop renderer
